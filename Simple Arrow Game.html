@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Arrow Key Game</title>
+    <style>
+        /* Style the canvas */
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="700" height="700"></canvas>
+    <script>
+        // JavaScript code for the game
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let x = canvas.width / 2;
+        let y = canvas.height / 2;
+        const speed = 3;
+        const playerSize = 20;
+        const obstacles = [];
+        const obstacleSize = 15;
+        let obstacleSpeed = 2;
+        let gameOver = false;
+        let startTime = Date.now();
+        let direction = { up: false, down: false, left: false, right: false };
+
+        function drawPlayer() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(x, y, playerSize, playerSize);
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = 'red';
+            obstacles.forEach(obstacle => {
+                ctx.beginPath();
+                ctx.arc(obstacle.x, obstacle.y, obstacleSize, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function updateObstacles() {
+            obstacles.forEach(obstacle => {
+                if (obstacle.direction === 'down') {
+                    obstacle.y += obstacleSpeed;
+                    if (obstacle.y > canvas.height) {
+                        obstacle.y = -obstacleSize;
+                        obstacle.x = Math.random() * (canvas.width - obstacleSize * 2) + obstacleSize;
+                    }
+                } else if (obstacle.direction === 'left') {
+                    obstacle.x -= obstacleSpeed;
+                    if (obstacle.x < -obstacleSize) {
+                        obstacle.x = canvas.width + obstacleSize;
+                        obstacle.y = Math.random() * (canvas.height - obstacleSize * 2) + obstacleSize;
+                    }
+                } else if (obstacle.direction === 'right') {
+                    obstacle.x += obstacleSpeed;
+                    if (obstacle.x > canvas.width + obstacleSize) {
+                        obstacle.x = -obstacleSize;
+                        obstacle.y = Math.random() * (canvas.height - obstacleSize * 2) + obstacleSize;
+                    }
+                }
+            });
+        }
+
+        function checkCollision() {
+            for (let obstacle of obstacles) {
+                const distX = Math.abs(obstacle.x - x - playerSize / 2);
+                const distY = Math.abs(obstacle.y - y - playerSize / 2);
+
+                if (distX <= playerSize / 2 + obstacleSize && distY <= playerSize / 2 + obstacleSize) {
+                    gameOver = true;
+                    alert('Game Over! You survived for ' + getSurvivalTime() + ' seconds.');
+                    document.location.reload();
+                }
+            }
+        }
+
+        function updatePosition() {
+            if (gameOver) return;
+
+            if (direction.up && y - speed >= 0) y -= speed;
+            if (direction.down && y + speed + playerSize <= canvas.height) y += speed;
+            if (direction.left && x - speed >= 0) x -= speed;
+            if (direction.right && x + speed + playerSize <= canvas.width) x += speed;
+
+            drawGame();
+        }
+
+        function drawTimer() {
+            const survivalTime = getSurvivalTime();
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('Time: ' + survivalTime + 's', canvas.width - 100, 30);
+        }
+
+        function getSurvivalTime() {
+            return Math.floor((Date.now() - startTime) / 1000);
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            drawObstacles();
+            drawTimer();
+            checkCollision();
+        }
+
+        function gameLoop() {
+            if (!gameOver) {
+                updateObstacles();
+                updatePosition();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function initObstacles() {
+            for (let i = 0; i < 5; i++) {
+                obstacles.push({
+                    x: Math.random() * (canvas.width - obstacleSize * 2) + obstacleSize,
+                    y: Math.random() * canvas.height - canvas.height,
+                    direction: 'down'
+                });
+            }
+            setTimeout(() => {
+                for (let i = 0; i < 5; i++) {
+                    obstacles.push({
+                        x: canvas.width + obstacleSize,
+                        y: Math.random() * (canvas.height - obstacleSize * 2) + obstacleSize,
+                        direction: 'left'
+                    });
+                }
+            }, 10000); // Add obstacles from the left after 10 seconds
+
+            setTimeout(() => {
+                for (let i = 0; i < 5; i++) {
+                    obstacles.push({
+                        x: -obstacleSize,
+                        y: Math.random() * (canvas.height - obstacleSize * 2) + obstacleSize,
+                        direction: 'right'
+                    });
+                }
+            }, 20000); // Add obstacles from the right after 20 seconds
+
+            setInterval(() => {
+                obstacleSpeed += 0.5; // Increase obstacle speed every 10 seconds
+            }, 10000);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    direction.up = true;
+                    break;
+                case 'ArrowDown':
+                    direction.down = true;
+                    break;
+                case 'ArrowLeft':
+                    direction.left = true;
+                    break;
+                case 'ArrowRight':
+                    direction.right = true;
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    direction.up = false;
+                    break;
+                case 'ArrowDown':
+                    direction.down = false;
+                    break;
+                case 'ArrowLeft':
+                    direction.left = false;
+                    break;
+                case 'ArrowRight':
+                    direction.right = false;
+                    break;
+            }
+        });
+
+        initObstacles();
+        drawGame();
+        gameLoop();
+    </script>
+</body>
+</html>
